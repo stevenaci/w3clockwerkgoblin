@@ -25,7 +25,7 @@ class Players(dict):
             player: Player = self[ctx.channel.name]
             match = player.get_current_match()
             if match:
-                await ctx.channel.send(match.describe(player.bnet))
+                await ctx.channel.send(match.describe_teams(player.bnet))
             else:
                 await ctx.channel.send("not currently in a match")
         else:

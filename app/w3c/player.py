@@ -25,7 +25,7 @@ class Player():
     def describe_current_match(self) -> str:
         match: Match = self.get_current_match(self)
         if match:
-            match.describe(self.bnet)
+            match.describe_teams(self.bnet)
         else:
             raise Exception() 
 

@@ -2,15 +2,6 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 """
-{'map': 'amazonia', 'id': '5f40632b4521d79a2975cd8d', 'durationInSeconds': 0,
-'startTime': '2020-08-22T00:13:04.235+00:00', 'endTime': '0001-01-01T00:00:00+00:00',
-'gameMode': 1, 'teams': [
-    {'players': [{'race': 4, 'oldMmr': 2066, 'currentMmr': 0,
-'battleTag': 'walterelfo#1110', 'name': 'walterelfo', 'mmrGain': -2066, 'won': False,
-'location': 'CL', 'country': None}], 'won': False
-},
-{'players': [{'race': 1, 'oldMmr': 2095, 'currentMmr': 0, 'battleTag': 'Fish#14989', 'name': 'Fish', 'mmrGain': -2095, 'won': False, 'location': 'SG', 'country': 'Kuwait'}], 'won': False}],
-'gateWay': 10, 'season': 0}
 https://statistic-service.w3champions.com/api/players/Minigun%2311620/winrate?season=2
 """
 gateway_map = {10:'America', 20: 'Europe'}
@@ -51,9 +42,19 @@ class MatchPlayer(BaseModel):
     won: bool
     location: str
     country: Optional[str]
+    def describe(self):
+        return format(
+            "Race: {} "\
+            "Mmr: {} "\
+            "Battletag:{} ",
+            self.race, self.currentMmr, self.battleTag
+        )
 
 class MatchTeam(BaseModel):
     players: list[MatchPlayer]
+    @property
+    def describe(self):
+        return [p.describe for p in self.players].join(" \n")
 
 class Match(BaseModel):
     map: str
@@ -69,6 +70,12 @@ class Match(BaseModel):
     @property
     def game_mode(self):
         return gamemode_map.get(self.gameMode)
+    
+    @property
+    def players(self):
+        return sum([
+            team.players for team in self.teams
+        ], []) if self.teams else []
 
     def opponents(self, battletag: str) -> list[MatchPlayer]:
         # collect teams which doesn't have this player on it.
@@ -82,10 +89,17 @@ class Match(BaseModel):
             team.players for team in opponent_teams
         ], []) if opponent_teams else []
 
-    def describe(self, user_bt: str):
-        oppos = self.opponents(user_bt)
+
+    def describe_game(self, user_bt: str):
         return (
             f"Map: {self.map} Time elapsed: {(self.startTime.replace(tzinfo=None) - datetime.now()).seconds} seconds",
-            f"Oppo: { ', '.join(p.battleTag for p in oppos) }",
+            f"Oppo: { ', '.join(p.battleTag for p in self.players) }",
             f"Game M0de: {self.game_mode}"
         )
+    
+    @property
+    def describe_teams(self):
+        s = ""
+        for i, team in enumerate(self.teams):
+            s += "Team " + i + "\n" + team.describe
+
